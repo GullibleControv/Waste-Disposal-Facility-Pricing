@@ -1,0 +1,210 @@
+@base = http://localhost:5065
+
+### Health check
+GET {{base}}/
+
+###
+
+# ── Basic price calculation ──────────────────────────────────────────────────
+
+### AC01 — P001 (Osaka) drops Construction 10kg → expect 1500 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P001",
+  "visit_id": "V-AC01",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC02 — P001 (Osaka) drops Green 20kg → expect 2000 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P001",
+  "visit_id": "V-AC02",
+  "dropped_fractions": [
+    { "fraction_type": "Green waste", "amount_dropped": 20 }
+  ]
+}
+
+###
+
+### AC03 — P001 drops Construction 10kg + Green 20kg in one visit → expect 3500 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P001",
+  "visit_id": "V-AC03",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 },
+    { "fraction_type": "Green waste", "amount_dropped": 20 }
+  ]
+}
+
+###
+
+### AC04 — P002 (Tokyo) drops Construction 10kg → expect 1900 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P002",
+  "visit_id": "V-AC04",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC05 — P002 (Tokyo) drops Green 20kg → expect 1600 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P002",
+  "visit_id": "V-AC05",
+  "dropped_fractions": [
+    { "fraction_type": "Green waste", "amount_dropped": 20 }
+  ]
+}
+
+###
+
+# ── Monthly surcharge (run AC06 → AC09 in order, same server session) ────────
+
+### AC06 — P001's 1st visit this month → expect 1500 JPY (no surcharge)
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-10",
+  "person_id": "P001",
+  "visit_id": "V-AC06",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC07 — P001's 2nd visit this month → expect 1500 JPY (still no surcharge)
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-11",
+  "person_id": "P001",
+  "visit_id": "V-AC07",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC08 — P001's 3rd visit this month → expect 1575 JPY (5% surcharge kicks in)
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-12",
+  "person_id": "P001",
+  "visit_id": "V-AC08",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC09 — P001's 4th visit this month → expect 1575 JPY (surcharge continues)
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-13",
+  "person_id": "P001",
+  "visit_id": "V-AC09",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+### AC10 — P001 visits NEXT month → expect 1500 JPY (counter resets)
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-06-01",
+  "person_id": "P001",
+  "visit_id": "V-AC10",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+# ── Independent counters (AC11 — send P002 after the P001 visits above) ──────
+
+### AC11 — P002's first visit is unaffected by P001's visit count → expect 1900 JPY
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-10",
+  "person_id": "P002",
+  "visit_id": "V-AC11",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": 10 }
+  ]
+}
+
+###
+
+# ── Error cases ───────────────────────────────────────────────────────────────
+
+### AC12 — Negative weight → expect error response
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P001",
+  "visit_id": "V-AC12",
+  "dropped_fractions": [
+    { "fraction_type": "Construction waste", "amount_dropped": -5 }
+  ]
+}
+
+###
+
+### AC13 — Unknown fraction type → expect error response
+POST {{base}}/calculatePrice
+Content-Type: application/json
+
+{
+  "date": "2026-05-01",
+  "person_id": "P001",
+  "visit_id": "V-AC13",
+  "dropped_fractions": [
+    { "fraction_type": "Nuclear waste", "amount_dropped": 10 }
+  ]
+}
+
+###

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PricingSystem.Api/PricingSystem.Api.csproj" />
+  <Project Path="PricingSystem.Tests/PricingSystem.Tests.csproj" />
+</Solution>
